@@ -1,0 +1,32 @@
+# Drone Human Detection & Mission Planner Ground Station
+# Python Dependencies
+
+# GUI Framework
+PyQt5==5.15.10
+PyQtWebEngine==5.15.6
+
+# MAVLink Protocol
+pymavlink==2.4.41
+
+# Computer Vision & Detection
+opencv-python==4.8.1.78
+ultralytics==8.1.0
+torch>=2.0.0
+torchvision>=0.15.0
+mediapipe>=0.10.0
+
+# Scientific Computing
+numpy>=1.24.0,<2.0.0
+scipy>=1.11.0
+
+# Geospatial Operations
+shapely>=2.0.0
+
+# Serial Communication
+pyserial==3.5
+
+# Mapping & Visualization
+folium==0.15.1
+
+# Additional utilities
+pillow>=10.0.0

@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyQt
+*.ui
+*.qrc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Application specific
+best.pt
+*.pt
+temp_map.html
+temp_live_map.html
+*.log
+
+# Test files
+test_*.py
+tests/
+
+# Data files
+*.kml
+data/
+missions/
+logs/
+
+# Video files
+*.mp4
+*.avi
+*.264
+
+# Model checkpoints
+runs/
+weights/
+checkpoints/
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
