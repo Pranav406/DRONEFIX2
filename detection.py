@@ -36,14 +36,21 @@ class DetectionEngine:
     
     def load_model(self):
         """Load YOLOv8 model - tries multiple paths"""
-        # Try multiple possible paths
+        _here = os.path.dirname(os.path.abspath(__file__))
+        _parent = os.path.dirname(_here)
+
+        # Try multiple possible paths (explicit path first, then local,
+        # then parent directory where the .pt file often lives)
         paths = [
             self.model_path,
             "best.pt",
             "yolov8n.pt",
             "yolov8s.pt",
-            os.path.join(os.path.dirname(__file__), "best.pt"),
-            os.path.join(os.path.dirname(__file__), "yolov8n.pt")
+            os.path.join(_here, "best.pt"),
+            os.path.join(_here, "yolov8n.pt"),
+            os.path.join(_parent, "best.pt"),
+            os.path.join(_parent, "yolov8n.pt"),
+            os.path.join(_parent, "yolov8s.pt"),
         ]
         
         for path in paths:
@@ -88,8 +95,13 @@ class DetectionEngine:
             return []
         
         try:
-            # Run inference
-            results = self.model(frame, conf=confidence_threshold, verbose=False)
+            # Run inference - restrict to person class only for efficiency
+            results = self.model(
+                frame,
+                conf=confidence_threshold,
+                classes=[self.person_class_id],
+                verbose=False,
+            )
             
             detections = []
             
@@ -102,12 +114,11 @@ class DetectionEngine:
                     confidence = float(box.conf[0])
                     class_id = int(box.cls[0])
                     
-                    # Filter for person class only
-                    if class_id == self.person_class_id:
-                        detections.append((
-                            int(x1), int(y1), int(x2), int(y2),
-                            confidence, class_id
-                        ))
+                    # Only person class (already filtered by classes= above)
+                    detections.append((
+                        int(x1), int(y1), int(x2), int(y2),
+                        confidence, class_id
+                    ))
             
             return detections
             

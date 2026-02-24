@@ -9,7 +9,7 @@ import numpy as np
 from datetime import datetime
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QPushButton, QGroupBox, QScrollArea, QSplitter,
-                             QFrame, QGridLayout)
+                             QFrame, QGridLayout, QSizePolicy)
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QUrl
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -78,7 +78,8 @@ class VideoProcessingThread(QThread):
                     # --- Run detection only on every Nth frame ---
                     if frame_counter % self.DETECT_EVERY_N_FRAMES == 0:
                         detections = self.detection_engine.detect(
-                            frame, confidence_threshold=0.5
+                            frame,
+                            confidence_threshold=config.DETECTION_CONFIDENCE,
                         )
 
                         telemetry = self.mavlink_manager.get_telemetry()
@@ -120,68 +121,93 @@ class VideoProcessingThread(QThread):
 
 
 class DetectionCard(QFrame):
-    """Widget displaying a single detected person"""
-    
-    def __init__(self, tracker):
+    """Widget displaying a single detected person — responsive layout"""
+
+    def __init__(self, tracker, posture_info=None):
         super().__init__()
         self.tracker = tracker
+        self.posture_info = posture_info  # optional PostureAnalysis
         self.init_ui()
-        
+
     def init_ui(self):
         """Initialize card UI"""
         self.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
-        self.setMinimumHeight(150)
-        
-        layout = QVBoxLayout(self)
-        
+        self.setStyleSheet(
+            "DetectionCard { background-color: #333; border: 1px solid #555; border-radius: 6px; }"
+        )
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(8)
+
+        # ---- Snapshot (left) ----
+        self.snapshot_label = QLabel()
+        self.snapshot_label.setMinimumSize(80, 96)
+        self.snapshot_label.setMaximumSize(120, 144)
+        self.snapshot_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.snapshot_label.setAlignment(Qt.AlignCenter)
+        self.snapshot_label.setStyleSheet("background-color: #222; border: 1px solid #444; border-radius: 4px;")
+
+        if self.tracker.snapshot is not None:
+            self._set_snapshot(self.tracker.snapshot)
+        else:
+            self.snapshot_label.setText("No image")
+
+        layout.addWidget(self.snapshot_label)
+
+        # ---- Info (right) ----
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(2)
+
         # Person ID
         id_label = QLabel(f"Person #{self.tracker.tracker_id}")
-        id_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #4a90e2;")
-        layout.addWidget(id_label)
-        
-        # Snapshot
-        snapshot_label = QLabel()
-        if self.tracker.snapshot is not None:
-            h, w = self.tracker.snapshot.shape[:2]
-            
-            # Resize for display
-            display_w = 120
-            display_h = int(h * display_w / w)
-            
-            resized = cv2.resize(self.tracker.snapshot, (display_w, display_h))
-            rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
-            
-            h, w, ch = rgb.shape
-            bytes_per_line = ch * w
-            qt_image = QImage(rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
-            
-            snapshot_label.setPixmap(QPixmap.fromImage(qt_image))
-        else:
-            snapshot_label.setText("No snapshot")
-            snapshot_label.setAlignment(Qt.AlignCenter)
-        
-        layout.addWidget(snapshot_label, alignment=Qt.AlignCenter)
-        
+        id_label.setStyleSheet("font-weight: bold; font-size: 13px; color: #4a90e2; background: transparent;")
+        info_layout.addWidget(id_label)
+
+        # Posture & priority (if available)
+        if self.posture_info:
+            color_map = {"Critical": "#ff4444", "Warning": "#ffaa00", "Normal": "#44ff44"}
+            color = color_map.get(self.posture_info.condition, "#ffffff")
+            posture_label = QLabel(
+                f"{self.posture_info.condition}: {self.posture_info.posture_type}  "
+                f"[Score: {self.posture_info.priority_score}]"
+            )
+            posture_label.setStyleSheet(f"color: {color}; font-size: 11px; font-weight: bold; background: transparent;")
+            posture_label.setWordWrap(True)
+            info_layout.addWidget(posture_label)
+
         # GPS coordinates
         if self.tracker.gps_coords:
             lat, lon = self.tracker.gps_coords
             gps_label = QLabel(f"📍 {lat:.6f}, {lon:.6f}")
-            gps_label.setStyleSheet("color: #88ff88; font-size: 11px;")
+            gps_label.setStyleSheet("color: #88ff88; font-size: 10px; background: transparent;")
         else:
             gps_label = QLabel("📍 No GPS data")
-            gps_label.setStyleSheet("color: #888; font-size: 11px;")
-        
-        layout.addWidget(gps_label)
-        
-        # Timestamp
-        time_label = QLabel(f"🕒 {self.tracker.last_seen.strftime('%H:%M:%S')}")
-        time_label.setStyleSheet("color: #888; font-size: 10px;")
-        layout.addWidget(time_label)
-        
-        # Tracked frames
-        frames_label = QLabel(f"Frames: {self.tracker.frames_tracked}")
-        frames_label.setStyleSheet("color: #888; font-size: 10px;")
-        layout.addWidget(frames_label)
+            gps_label.setStyleSheet("color: #888; font-size: 10px; background: transparent;")
+        info_layout.addWidget(gps_label)
+
+        # Timestamp & frames
+        meta_label = QLabel(
+            f"🕒 {self.tracker.last_seen.strftime('%H:%M:%S')}  •  "
+            f"Frames: {self.tracker.frames_tracked}"
+        )
+        meta_label.setStyleSheet("color: #888; font-size: 10px; background: transparent;")
+        info_layout.addWidget(meta_label)
+
+        info_layout.addStretch()
+        layout.addLayout(info_layout, 1)
+
+    # ------------------------------------------------------------------ #
+    def _set_snapshot(self, snapshot):
+        """Scale snapshot to fit the label while keeping aspect ratio"""
+        rgb = cv2.cvtColor(snapshot, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb.shape
+        qt_image = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(qt_image)
+        scaled = pixmap.scaled(
+            self.snapshot_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+        )
+        self.snapshot_label.setPixmap(scaled)
 
 
 class LiveDetectionTab(QWidget):
@@ -212,6 +238,8 @@ class LiveDetectionTab(QWidget):
         
         # Track analyzed trackers to avoid duplicate analysis
         self.analyzed_trackers = set()
+        # Cache posture results keyed by tracker_id
+        self._posture_cache = {}
         
         # RTSP stream URL from config
         self.rtsp_url = config.RTSP_STREAM_URL
@@ -319,7 +347,8 @@ class LiveDetectionTab(QWidget):
         
         self.video_label = QLabel()
         self.video_label.setAlignment(Qt.AlignCenter)
-        self.video_label.setMinimumSize(640, 480)
+        self.video_label.setMinimumSize(320, 240)
+        self.video_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.video_label.setStyleSheet("background-color: #000; border: 2px solid #3d3d3d;")
         self.video_label.setText("Video feed will appear here\nClick 'Start Detection' to begin")
         
@@ -337,7 +366,8 @@ class LiveDetectionTab(QWidget):
         map_layout = QVBoxLayout(map_group)
         
         self.live_map_view = QWebEngineView()
-        self.live_map_view.setMinimumHeight(250)
+        self.live_map_view.setMinimumHeight(150)
+        self.live_map_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         map_layout.addWidget(self.live_map_view)
         
         layout.addWidget(map_group, 1)
@@ -425,16 +455,19 @@ class LiveDetectionTab(QWidget):
         if self.is_running:
             return
         
-        # Initialize detection engine
+        # Initialize detection engine with the configured model path
         try:
-            self.detection_engine = DetectionEngine('best.pt')
+            self.detection_engine = DetectionEngine(config.YOLO_MODEL_PATH)
+            if self.detection_engine.model is None:
+                raise RuntimeError("No YOLOv8 model file found")
         except Exception as e:
             from PyQt5.QtWidgets import QMessageBox
             QMessageBox.warning(
                 self,
                 "Model Error",
                 f"Failed to load YOLOv8 model:\n{str(e)}\n\n"
-                f"Make sure 'best.pt' exists in the application directory."
+                f"Tried path: {config.YOLO_MODEL_PATH}\n"
+                f"Place yolov8n.pt in the project directory."
             )
             return
         
@@ -524,15 +557,16 @@ class LiveDetectionTab(QWidget):
             item = self.detections_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-        
-        # Add new cards
+
+        # Add new cards with posture info when available
         for tracker in trackers:
-            card = DetectionCard(tracker)
+            posture_info = self._posture_cache.get(tracker.tracker_id) if hasattr(self, '_posture_cache') else None
+            card = DetectionCard(tracker, posture_info=posture_info)
             self.detections_layout.insertWidget(
                 self.detections_layout.count() - 1,
                 card
             )
-        
+
         # Update count
         self.detection_count_label.setText(f"Active Detections: {len(trackers)}")
     
@@ -544,7 +578,21 @@ class LiveDetectionTab(QWidget):
         self.telemetry_labels['pitch_value'].setText(f"{telemetry['pitch']:.1f}°")
         self.telemetry_labels['roll_value'].setText(f"{telemetry['roll']:.1f}°")
         self.telemetry_labels['yaw_value'].setText(f"{telemetry['yaw']:.1f}°")
-        self.telemetry_labels['battery_value'].setText(f"{telemetry['battery']}%")
+
+        # Battery — show percentage + voltage
+        batt_pct = telemetry.get('battery', 0)
+        voltage = telemetry.get('voltage', 0.0)
+        current = telemetry.get('current', 0.0)
+        if batt_pct > 0 and voltage > 0:
+            batt_text = f"{batt_pct}%  ({voltage:.1f}V / {current:.1f}A)"
+        elif voltage > 0:
+            batt_text = f"{voltage:.1f}V / {current:.1f}A"
+        elif batt_pct > 0:
+            batt_text = f"{batt_pct}%"
+        else:
+            batt_text = "--"
+        self.telemetry_labels['battery_value'].setText(batt_text)
+
         self.telemetry_labels['mode_value'].setText(telemetry['mode'])
         self.telemetry_labels['armed_value'].setText("Yes" if telemetry['armed'] else "No")
     
@@ -612,6 +660,7 @@ class LiveDetectionTab(QWidget):
         
         # Clean up old tracker IDs to prevent memory leak
         self.analyzed_trackers = self.analyzed_trackers.intersection(active_ids)
+        self._posture_cache = {k: v for k, v in self._posture_cache.items() if k in active_ids}
         
         for tracker in trackers:
             # Skip if already analyzed or no snapshot
@@ -628,6 +677,8 @@ class LiveDetectionTab(QWidget):
                 
                 # Mark as analyzed
                 self.analyzed_trackers.add(tracker.tracker_id)
+                # Cache posture for detection card display
+                self._posture_cache[tracker.tracker_id] = analysis
                 
                 # Save snapshot with analysis
                 try:

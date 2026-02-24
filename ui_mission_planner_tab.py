@@ -85,7 +85,7 @@ class MissionPlannerTab(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setMinimumWidth(280)
+        scroll.setMinimumWidth(200)
         
         panel = QWidget()
         layout = QVBoxLayout(panel)

@@ -58,7 +58,7 @@ class PersonTracker:
         return (datetime.now() - self.last_seen).total_seconds()
     
     def extract_snapshot(self, frame):
-        """Extract person snapshot from frame"""
+        """Extract person snapshot from frame with padding for better analysis"""
         if frame is None:
             return
         
@@ -66,10 +66,17 @@ class PersonTracker:
         
         # Ensure bounds are within frame
         h, w = frame.shape[:2]
-        x1 = max(0, int(x1))
-        y1 = max(0, int(y1))
-        x2 = min(w, int(x2))
-        y2 = min(h, int(y2))
+        
+        # Add 15% padding on each side for better posture analysis
+        bw = x2 - x1
+        bh = y2 - y1
+        pad_x = int(bw * 0.15)
+        pad_y = int(bh * 0.15)
+        
+        x1 = max(0, int(x1) - pad_x)
+        y1 = max(0, int(y1) - pad_y)
+        x2 = min(w, int(x2) + pad_x)
+        y2 = min(h, int(y2) + pad_y)
         
         # Extract and store snapshot
         if y2 > y1 and x2 > x1:

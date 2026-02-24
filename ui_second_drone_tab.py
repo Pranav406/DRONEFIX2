@@ -236,7 +236,7 @@ class SecondDroneTab(QWidget):
         map_layout = QVBoxLayout(map_group)
         
         self.live_map_view = QWebEngineView()
-        self.live_map_view.setMinimumHeight(400)
+        self.live_map_view.setMinimumHeight(200)
         map_layout.addWidget(self.live_map_view)
         
         # Map legend

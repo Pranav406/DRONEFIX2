@@ -3,7 +3,7 @@ Telemetry Tab - Real-time drone telemetry display
 """
 
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QGroupBox, QGridLayout, QPushButton)
+                             QGroupBox, QGridLayout, QPushButton, QSizePolicy)
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QFont
 
@@ -28,14 +28,16 @@ class TelemetryTab(QWidget):
         
         # Title
         title = QLabel("Live Telemetry Data")
-        title.setStyleSheet("font-size: 24px; font-weight: bold; color: #4a90e2; padding: 10px;")
+        title.setStyleSheet("font-size: 20pt; font-weight: bold; color: #4a90e2; padding: 10px;")
         title.setAlignment(Qt.AlignCenter)
+        title.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         layout.addWidget(title)
         
         # Connection status
         self.connection_label = QLabel("● NOT CONNECTED")
-        self.connection_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #ff4444; padding: 5px;")
+        self.connection_label.setStyleSheet("font-size: 14pt; font-weight: bold; color: #ff4444; padding: 5px;")
         self.connection_label.setAlignment(Qt.AlignCenter)
+        self.connection_label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         layout.addWidget(self.connection_label)
         
         # Create telemetry display sections
@@ -56,14 +58,15 @@ class TelemetryTab(QWidget):
         telemetry_layout.addLayout(left_column, 1)
         telemetry_layout.addLayout(right_column, 1)
         
-        layout.addLayout(telemetry_layout)
+        layout.addLayout(telemetry_layout, 1)
         
         # Instructions
         instructions = QLabel(
             "Connect to your drone via the Mission Planner tab to view live telemetry data"
         )
-        instructions.setStyleSheet("color: #888; font-size: 12px; padding: 10px;")
+        instructions.setStyleSheet("color: #888; font-size: 10pt; padding: 10px;")
         instructions.setAlignment(Qt.AlignCenter)
+        instructions.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         layout.addWidget(instructions)
         
     def create_gps_section(self):
@@ -82,9 +85,9 @@ class TelemetryTab(QWidget):
         self.gps_labels = {}
         for row, (label_text, key) in enumerate(labels):
             label = QLabel(label_text)
-            label.setStyleSheet("font-weight: bold; font-size: 14px;")
+            label.setStyleSheet("font-weight: bold; font-size: 11pt;")
             value = QLabel("--")
-            value.setStyleSheet("font-size: 16px; color: #4a90e2;")
+            value.setStyleSheet("font-size: 12pt; color: #4a90e2;")
             value.setAlignment(Qt.AlignRight)
             
             layout.addWidget(label, row, 0)
@@ -108,9 +111,9 @@ class TelemetryTab(QWidget):
         self.attitude_labels = {}
         for row, (label_text, key) in enumerate(labels):
             label = QLabel(label_text)
-            label.setStyleSheet("font-weight: bold; font-size: 14px;")
+            label.setStyleSheet("font-weight: bold; font-size: 11pt;")
             value = QLabel("--")
-            value.setStyleSheet("font-size: 16px; color: #4a90e2;")
+            value.setStyleSheet("font-size: 12pt; color: #4a90e2;")
             value.setAlignment(Qt.AlignRight)
             
             layout.addWidget(label, row, 0)
@@ -127,9 +130,9 @@ class TelemetryTab(QWidget):
         
         # Battery
         battery_label = QLabel("Battery:")
-        battery_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        battery_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         self.battery_value = QLabel("--")
-        self.battery_value.setStyleSheet("font-size: 16px; color: #4a90e2;")
+        self.battery_value.setStyleSheet("font-size: 12pt; color: #4a90e2;")
         self.battery_value.setAlignment(Qt.AlignRight)
         
         layout.addWidget(battery_label, 0, 0)
@@ -137,9 +140,9 @@ class TelemetryTab(QWidget):
         
         # Voltage
         voltage_label = QLabel("Voltage:")
-        voltage_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        voltage_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         self.voltage_value = QLabel("--")
-        self.voltage_value.setStyleSheet("font-size: 16px; color: #4a90e2;")
+        self.voltage_value.setStyleSheet("font-size: 12pt; color: #4a90e2;")
         self.voltage_value.setAlignment(Qt.AlignRight)
         
         layout.addWidget(voltage_label, 1, 0)
@@ -147,9 +150,9 @@ class TelemetryTab(QWidget):
         
         # Current
         current_label = QLabel("Current:")
-        current_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        current_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         self.current_value = QLabel("--")
-        self.current_value.setStyleSheet("font-size: 16px; color: #4a90e2;")
+        self.current_value.setStyleSheet("font-size: 12pt; color: #4a90e2;")
         self.current_value.setAlignment(Qt.AlignRight)
         
         layout.addWidget(current_label, 2, 0)
@@ -165,9 +168,9 @@ class TelemetryTab(QWidget):
         
         # Flight Mode
         mode_label = QLabel("Flight Mode:")
-        mode_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        mode_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         self.mode_value = QLabel("--")
-        self.mode_value.setStyleSheet("font-size: 16px; color: #4a90e2;")
+        self.mode_value.setStyleSheet("font-size: 12pt; color: #4a90e2;")
         self.mode_value.setAlignment(Qt.AlignRight)
         
         layout.addWidget(mode_label, 0, 0)
@@ -175,9 +178,9 @@ class TelemetryTab(QWidget):
         
         # Armed Status
         armed_label = QLabel("Armed:")
-        armed_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        armed_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         self.armed_value = QLabel("--")
-        self.armed_value.setStyleSheet("font-size: 16px; color: #888;")
+        self.armed_value.setStyleSheet("font-size: 12pt; color: #888;")
         self.armed_value.setAlignment(Qt.AlignRight)
         
         layout.addWidget(armed_label, 1, 0)
@@ -204,11 +207,11 @@ class TelemetryTab(QWidget):
         
         # Color code battery
         if battery_pct > 50:
-            self.battery_value.setStyleSheet("font-size: 16px; color: #44ff44;")
+            self.battery_value.setStyleSheet("font-size: 12pt; color: #44ff44;")
         elif battery_pct > 20:
-            self.battery_value.setStyleSheet("font-size: 16px; color: #ffaa00;")
+            self.battery_value.setStyleSheet("font-size: 12pt; color: #ffaa00;")
         else:
-            self.battery_value.setStyleSheet("font-size: 16px; color: #ff4444;")
+            self.battery_value.setStyleSheet("font-size: 12pt; color: #ff4444;")
         
         # Voltage
         voltage = telemetry.get('voltage', 0.0)
@@ -224,20 +227,20 @@ class TelemetryTab(QWidget):
         # Armed Status
         if telemetry['armed']:
             self.armed_value.setText("ARMED")
-            self.armed_value.setStyleSheet("font-size: 16px; color: #ff4444; font-weight: bold;")
+            self.armed_value.setStyleSheet("font-size: 12pt; color: #ff4444; font-weight: bold;")
         else:
             self.armed_value.setText("DISARMED")
-            self.armed_value.setStyleSheet("font-size: 16px; color: #44ff44;")
+            self.armed_value.setStyleSheet("font-size: 12pt; color: #44ff44;")
     
     @pyqtSlot(bool)
     def update_connection_status(self, connected):
         """Update connection status display"""
         if connected:
             self.connection_label.setText("● CONNECTED")
-            self.connection_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #44ff44; padding: 5px;")
+            self.connection_label.setStyleSheet("font-size: 14pt; font-weight: bold; color: #44ff44; padding: 5px;")
         else:
             self.connection_label.setText("● NOT CONNECTED")
-            self.connection_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #ff4444; padding: 5px;")
+            self.connection_label.setStyleSheet("font-size: 14pt; font-weight: bold; color: #ff4444; padding: 5px;")
             
             # Reset all values to "--"
             for label in self.gps_labels.values():
@@ -264,7 +267,7 @@ class TelemetryTab(QWidget):
             margin-top: 15px;
             padding: 15px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 12pt;
             color: #4a90e2;
         }
         

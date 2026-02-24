@@ -19,6 +19,9 @@ class MavlinkManager(QObject):
     mission_upload_progress = pyqtSignal(str)
     mission_upload_complete = pyqtSignal(bool, str)
     
+    # EMA smoothing factor (0..1); smaller = smoother, slower to react
+    _EMA_ALPHA = 0.15
+    
     def __init__(self):
         super().__init__()
         self.connection = None
@@ -28,6 +31,10 @@ class MavlinkManager(QObject):
         
         # Thread safety for telemetry access
         self.telemetry_lock = threading.Lock()
+        
+        # Flag: once BATTERY_STATUS is received, ignore SYS_STATUS for
+        # voltage/current because BATTERY_STATUS is more accurate (cell-level).
+        self._has_battery_status = False
         
         # Latest telemetry data
         self.telemetry = {
@@ -162,31 +169,55 @@ class MavlinkManager(QObject):
                         self.telemetry['yaw'] = msg.yaw * 57.2958
                     updated = True
                 
-                # Battery status (basic)
+                # Battery status (basic) — fallback when BATTERY_STATUS is absent
                 elif msg_type == 'SYS_STATUS':
                     with self.telemetry_lock:
-                        if msg.battery_remaining != -1:
-                            self.telemetry['battery'] = msg.battery_remaining
-                        # voltage_battery is in millivolts
-                        if msg.voltage_battery not in (-1, 0, 65535):
-                            self.telemetry['voltage'] = msg.voltage_battery / 1000.0
-                        # current_battery is in 10*milliamperes (centiamps)
-                        if msg.current_battery != -1:
-                            self.telemetry['current'] = msg.current_battery / 100.0
+                        # battery_remaining: -1 means not available
+                        if msg.battery_remaining not in (-1, 0):
+                            self.telemetry['battery'] = max(0, min(100, msg.battery_remaining))
+
+                        # Only use SYS_STATUS for voltage/current when we
+                        # have NOT received any BATTERY_STATUS yet.
+                        if not self._has_battery_status:
+                            # voltage_battery is in millivolts; 0/65535 = invalid
+                            if msg.voltage_battery not in (-1, 0, 65535) and msg.voltage_battery < 65535:
+                                raw_v = msg.voltage_battery / 1000.0
+                                self.telemetry['voltage'] = self._ema(
+                                    self.telemetry['voltage'], raw_v
+                                )
+                            # current_battery is in centiamps; -1 = not available
+                            if msg.current_battery not in (-1,) and msg.current_battery < 65535:
+                                raw_a = msg.current_battery / 100.0
+                                self.telemetry['current'] = self._ema(
+                                    self.telemetry['current'], raw_a
+                                )
                     updated = True
-                
-                # Detailed battery status (preferred over SYS_STATUS)
+
+                # Detailed battery status (preferred — more accurate)
                 elif msg_type == 'BATTERY_STATUS':
                     with self.telemetry_lock:
+                        self._has_battery_status = True
+
                         # voltages[] is an array of cell voltages in mV
-                        # UINT16_MAX (65535) = cell not present
-                        cells = [v for v in msg.voltages if v != 65535 and v > 0]
+                        # UINT16_MAX (65535) = cell not present / invalid
+                        cells = [v for v in msg.voltages if 0 < v < 65535]
                         if cells:
-                            self.telemetry['voltage'] = sum(cells) / 1000.0
-                        if msg.current_battery != -1:
-                            self.telemetry['current'] = msg.current_battery / 100.0
-                        if msg.battery_remaining != -1:
-                            self.telemetry['battery'] = msg.battery_remaining
+                            raw_v = sum(cells) / 1000.0
+                            self.telemetry['voltage'] = self._ema(
+                                self.telemetry['voltage'], raw_v
+                            )
+
+                        # current_battery is in centiamps (10 mA units); -1 = N/A
+                        if msg.current_battery not in (-1,) and 0 <= msg.current_battery < 65535:
+                            raw_a = msg.current_battery / 100.0
+                            self.telemetry['current'] = self._ema(
+                                self.telemetry['current'], raw_a
+                            )
+                            print(f"[MAVLink] BATTERY_STATUS raw_current={msg.current_battery} → {raw_a:.2f} A")
+
+                        # battery_remaining: -1 = not sent; clamp 0-100
+                        if msg.battery_remaining not in (-1,):
+                            self.telemetry['battery'] = max(0, min(100, msg.battery_remaining))
                     updated = True
                 
                 # Heartbeat (mode and armed status)
@@ -208,6 +239,16 @@ class MavlinkManager(QObject):
         
         print("[MAVLink] Telemetry loop stopped")
     
+    # ── helpers ──────────────────────────────────────────────────────
+    def _ema(self, old_value, new_value):
+        """Exponential Moving Average for smooth telemetry display.
+        
+        When `old_value` is 0 (first reading) the new value is taken as-is.
+        """
+        if old_value == 0.0:
+            return new_value
+        return old_value + self._EMA_ALPHA * (new_value - old_value)
+
     def get_telemetry(self):
         """Get current telemetry snapshot (thread-safe)"""
         with self.telemetry_lock:

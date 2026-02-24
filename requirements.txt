@@ -13,7 +13,7 @@ opencv-python==4.8.1.78
 ultralytics==8.1.0
 torch>=2.0.0
 torchvision>=0.15.0
-mediapipe>=0.10.0
+mediapipe>=0.10.14
 
 # Scientific Computing
 numpy>=1.24.0,<2.0.0

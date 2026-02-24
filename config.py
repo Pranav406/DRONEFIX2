@@ -14,9 +14,14 @@ VIDEO_BUFFER_SIZE = 1
 # ========================================
 # YOLOv8 Detection Settings
 # ========================================
-# Model path - will try multiple locations
+# Model path - will try multiple locations automatically
 import os
-YOLO_MODEL_PATH = os.path.join(os.path.dirname(__file__), "C:/Users/Nick/Downloads/drone/DroneSW-Main/yolov8n.pt")
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PARENT = os.path.dirname(_HERE)
+# Check code dir first, then parent dir (model often lives one level up)
+YOLO_MODEL_PATH = os.path.join(_HERE, "yolov8n.pt")
+if not os.path.exists(YOLO_MODEL_PATH):
+    YOLO_MODEL_PATH = os.path.join(_PARENT, "yolov8n.pt")
 
 # Confidence threshold for detections (0.0 - 1.0)
 DETECTION_CONFIDENCE = 0.5
@@ -25,10 +30,10 @@ DETECTION_CONFIDENCE = 0.5
 PERSON_CLASS_ID = 0
 
 # ========================================
-# MediaPipe Posture Analysis Settings
+# MediaPipe Posture Analysis Settings (Tasks API)
 # ========================================
-# MediaPipe automatically downloads models to cache
-# No model path needed - models are managed automatically
+# The .task model file is auto-downloaded on first run into mediapipe_models/
+# Models: pose_landmarker_lite (0), pose_landmarker_full (1), pose_landmarker_heavy (2)
 
 # Minimum detection confidence (0.0 - 1.0)
 MEDIAPIPE_MIN_DETECTION_CONFIDENCE = 0.5
@@ -42,12 +47,10 @@ MEDIAPIPE_MIN_TRACKING_CONFIDENCE = 0.5
 # Heavy: Slower, more accurate
 MEDIAPIPE_MODEL_COMPLEXITY = 1
 
-# Enable smooth landmarks over time
+# Enable smooth landmarks over time (kept for reference; Tasks API handles internally)
 MEDIAPIPE_SMOOTH_LANDMARKS = True
 
-# Optional: Custom model cache directory (None = use system default)
-# MediaPipe caches models here: ~/.mediapipe/models (Linux/Mac)
-#                           or: %LOCALAPPDATA%\.mediapipe\models (Windows)
+# Optional: Custom model cache directory (None = use project's mediapipe_models/ folder)
 MEDIAPIPE_MODEL_CACHE = None  # Set to custom path if needed, e.g., "C:/mediapipe_models"
 
 # ========================================

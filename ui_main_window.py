@@ -3,7 +3,7 @@ Main Window UI - Container for all tabs and application state
 """
 
 from PyQt5.QtWidgets import (QMainWindow, QTabWidget, QWidget, QVBoxLayout,
-                             QStatusBar, QAction, QMenuBar, QLabel)
+                             QStatusBar, QAction, QMenuBar, QLabel, QApplication)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from ui_mission_planner_tab import MissionPlannerTab
@@ -34,7 +34,20 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         """Initialize the user interface"""
         self.setWindowTitle("DroneSW")
-        self.setGeometry(100, 100, 1400, 900)
+
+        # ── Responsive initial size: 80% of screen, clamped to reasonable range ──
+        screen = QApplication.primaryScreen()
+        if screen:
+            avail = screen.availableGeometry()
+            w = max(960, int(avail.width() * 0.80))
+            h = max(600, int(avail.height() * 0.80))
+            x = avail.x() + (avail.width() - w) // 2
+            y = avail.y() + (avail.height() - h) // 2
+            self.setGeometry(x, y, w, h)
+        else:
+            self.setGeometry(100, 100, 1400, 900)
+
+        self.setMinimumSize(800, 540)
         
         # Create menu bar
         self.create_menu_bar()
@@ -153,13 +166,18 @@ class MainWindow(QMainWindow):
         stylesheet = """
         QMainWindow {
             background-color: #2b2b2b;
+            color: #ffffff;
         }
-        
+
+        QWidget {
+            color: #ffffff;
+        }
+
         QTabWidget::pane {
             border: 1px solid #3d3d3d;
             background-color: #2b2b2b;
         }
-        
+
         QTabBar::tab {
             background-color: #3d3d3d;
             color: #ffffff;
@@ -168,40 +186,116 @@ class MainWindow(QMainWindow):
             border-top-left-radius: 4px;
             border-top-right-radius: 4px;
         }
-        
+
         QTabBar::tab:selected {
             background-color: #4a90e2;
         }
-        
+
         QTabBar::tab:hover {
             background-color: #505050;
         }
-        
+
         QStatusBar {
             background-color: #1e1e1e;
             color: #ffffff;
             border-top: 1px solid #3d3d3d;
         }
-        
+
         QMenuBar {
             background-color: #2b2b2b;
-        if self.live_detection_tab:
-                color: #ffffff;
+            color: #ffffff;
             padding: 4px;
         }
-        
+
         QMenuBar::item:selected {
             background-color: #4a90e2;
         }
-        
+
         QMenu {
             background-color: #2b2b2b;
             color: #ffffff;
             border: 1px solid #3d3d3d;
         }
-        
+
         QMenu::item:selected {
             background-color: #4a90e2;
+        }
+
+        QLabel {
+            color: #ffffff;
+        }
+
+        QGroupBox {
+            color: #ffffff;
+            border: 2px solid #3d3d3d;
+            border-radius: 5px;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        QGroupBox::title {
+            color: #4a90e2;
+            subcontrol-origin: margin;
+            left: 10px;
+            padding: 0 5px;
+        }
+
+        QCheckBox {
+            color: #ffffff;
+        }
+
+        QRadioButton {
+            color: #ffffff;
+        }
+
+        QLineEdit {
+            background-color: #2b2b2b;
+            color: #ffffff;
+            border: 1px solid #3d3d3d;
+            border-radius: 3px;
+            padding: 5px;
+        }
+
+        QTextEdit {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border: 1px solid #3d3d3d;
+        }
+
+        QComboBox {
+            background-color: #3d3d3d;
+            color: #ffffff;
+            border: 1px solid #555;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        QComboBox QAbstractItemView {
+            background-color: #2b2b2b;
+            color: #ffffff;
+            selection-background-color: #4a90e2;
+        }
+
+        QSpinBox {
+            background-color: #3d3d3d;
+            color: #ffffff;
+            border: 1px solid #555;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        QScrollArea {
+            border: none;
+            background-color: transparent;
+        }
+
+        QMessageBox {
+            background-color: #2b2b2b;
+            color: #ffffff;
+        }
+
+        QMessageBox QLabel {
+            color: #ffffff;
         }
         """
         self.setStyleSheet(stylesheet)
