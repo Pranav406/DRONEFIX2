@@ -264,6 +264,8 @@ class LiveDetectionTab(QWidget):
     def init_ui(self):
         """Initialize UI components"""
         main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(8, 8, 8, 8)
+        main_layout.setSpacing(6)
         
         # Title and controls
         header = self.create_header()
@@ -340,6 +342,8 @@ class LiveDetectionTab(QWidget):
         """Create left panel with video and map"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
         
         # Video feed
         video_group = QGroupBox("Live RTSP Video Feed")
@@ -381,12 +385,15 @@ class LiveDetectionTab(QWidget):
         """Create right panel with telemetry and detections"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
         
-        # Telemetry panel
+        # Telemetry panel — compact, no vertical stretch
         telemetry_group = self.create_telemetry_panel()
-        layout.addWidget(telemetry_group)
+        telemetry_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        layout.addWidget(telemetry_group, 0)
         
-        # Detections panel
+        # Detections panel — takes remaining space
         detections_group = self.create_detections_panel()
         layout.addWidget(detections_group, 1)
         
@@ -597,11 +604,23 @@ class LiveDetectionTab(QWidget):
         self.telemetry_labels['armed_value'].setText("Yes" if telemetry['armed'] else "No")
     
     def init_live_map(self):
-        """Initialize empty live map"""
-        m = folium.Map(location=[0, 0], zoom_start=2)
-        
+        """Initialize live map with a placeholder message"""
+        # Show a simple waiting page instead of null-island ocean
         html_path = os.path.join(os.path.dirname(__file__), 'temp_live_map.html')
-        m.save(html_path)
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(
+                '<!DOCTYPE html><html><head><meta charset="utf-8">'
+                '<style>body{margin:0;background:#1e1e1e;display:flex;'
+                'align-items:center;justify-content:center;height:100vh;'
+                'font-family:sans-serif;color:#888}'
+                '.msg{text-align:center}.icon{font-size:48px;margin-bottom:12px}'
+                '</style></head><body><div class="msg">'
+                '<div class="icon">\U0001f6f0\ufe0f</div>'
+                '<div>Waiting for GPS fix&hellip;</div>'
+                '<div style="font-size:12px;margin-top:6px;color:#555">'
+                'Map will appear once the drone reports a valid position</div>'
+                '</div></body></html>'
+            )
         self.live_map_view.setUrl(QUrl.fromLocalFile(html_path))
     
     def update_live_map(self):

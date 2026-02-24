@@ -380,7 +380,7 @@ class VideoStreamCapture:
                 (self._height, self._width, 3)
             )
 
-            if frame.std() > 10:
+            if frame.std() > 10 and not self._is_green_frame(frame):
                 # Valid frame! This decoder works.
                 print(f"  ✓ {label}: valid frame (std={frame.std():.1f})")
                 # Store this frame and return the running process
@@ -389,8 +389,8 @@ class VideoStreamCapture:
                 self._frame_ready.set()
                 return proc
 
-        # All 3 frames were gray
-        print(f"  ✗ {label}: all frames gray")
+        # All 3 frames were gray / green
+        print(f"  ✗ {label}: all frames gray or corrupt")
         proc.terminate()
         try: proc.wait(timeout=2)
         except: proc.kill()
@@ -454,9 +454,27 @@ class VideoStreamCapture:
         return True, "Connected to video stream (hardware HEVC decode)"
 
     # ------------------------------------------------------------------
+    @staticmethod
+    def _is_green_frame(frame):
+        """Detect corrupted green-tint frames (common HEVC HW decode artifact).
+
+        In BGR24: channel 0 = Blue, 1 = Green, 2 = Red.
+        A corrupt frame is dominated by green with very little blue/red.
+        We sample every 10th pixel to keep this fast (~0.1 ms).
+        """
+        sample = frame[::10, ::10]  # subsample for speed
+        means = sample.mean(axis=(0, 1))  # [B, G, R]
+        b, g, r = means[0], means[1], means[2]
+        # Green must dominate both other channels significantly
+        if g > 1.8 * b + 15 and g > 1.8 * r + 15:
+            return True
+        return False
+
     def _reader_loop(self):
         """Read raw BGR24 frames from the ffmpeg stdout pipe."""
         import numpy as np
+
+        green_count = 0  # consecutive green frames for logging
 
         while not self._stop and self._proc and self._proc.poll() is None:
             raw = self._proc.stdout.read(self._frame_size)
@@ -466,6 +484,14 @@ class VideoStreamCapture:
             frame = np.frombuffer(raw, dtype=np.uint8).reshape(
                 (self._height, self._width, 3)
             )
+
+            # Reject corrupted green frames
+            if self._is_green_frame(frame):
+                green_count += 1
+                if green_count == 1 or green_count % 50 == 0:
+                    print(f"[VideoStream] Skipping green frame (#{green_count})")
+                continue
+            green_count = 0
 
             with self._frame_lock:
                 self._latest_frame = frame

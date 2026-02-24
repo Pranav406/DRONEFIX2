@@ -9,7 +9,8 @@ from datetime import datetime
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QGroupBox, QListWidget, QSplitter, QGridLayout, QComboBox,
-    QMessageBox, QListWidgetItem, QTextEdit, QCheckBox, QSpinBox
+    QMessageBox, QListWidgetItem, QTextEdit, QCheckBox, QSpinBox,
+    QSizePolicy
 )
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtGui import QColor, QFont
@@ -87,7 +88,8 @@ class SecondDroneTab(QWidget):
         """Create left panel with connection and mission control"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
         
         # Connection group
         conn_group = QGroupBox("🔌 Second Drone Connection")
@@ -196,7 +198,8 @@ class SecondDroneTab(QWidget):
         """Create right panel with telemetry and map"""
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
         
         # Telemetry group
         telemetry_group = QGroupBox("📊 Second Drone Telemetry")
@@ -229,7 +232,8 @@ class SecondDroneTab(QWidget):
             
             self.telemetry_labels[key] = value
         
-        layout.addWidget(telemetry_group)
+        telemetry_group.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        layout.addWidget(telemetry_group, 0)
         
         # Live map group
         map_group = QGroupBox("🗺️ Live Tracking - Both Drones")

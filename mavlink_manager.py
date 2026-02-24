@@ -20,7 +20,7 @@ class MavlinkManager(QObject):
     mission_upload_complete = pyqtSignal(bool, str)
     
     # EMA smoothing factor (0..1); smaller = smoother, slower to react
-    _EMA_ALPHA = 0.15
+    _EMA_ALPHA = 0.04
     
     def __init__(self):
         super().__init__()
@@ -172,9 +172,12 @@ class MavlinkManager(QObject):
                 # Battery status (basic) — fallback when BATTERY_STATUS is absent
                 elif msg_type == 'SYS_STATUS':
                     with self.telemetry_lock:
-                        # battery_remaining: -1 means not available
-                        if msg.battery_remaining not in (-1, 0):
-                            self.telemetry['battery'] = max(0, min(100, msg.battery_remaining))
+                        # Only use SYS_STATUS when we have NOT received
+                        # any BATTERY_STATUS yet (avoids flip-flop).
+                        if not self._has_battery_status:
+                            # battery_remaining: -1 means not available
+                            if msg.battery_remaining not in (-1, 0):
+                                self.telemetry['battery'] = max(0, min(100, msg.battery_remaining))
 
                         # Only use SYS_STATUS for voltage/current when we
                         # have NOT received any BATTERY_STATUS yet.
